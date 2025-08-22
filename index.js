@@ -3,7 +3,8 @@ const cors = require('cors');
 require('dotenv').config();
 const {
     MongoClient,
-    ServerApiVersion
+    ServerApiVersion,
+    ObjectId
 } = require('mongodb');
 const app = express();
 const port = process.env.PORT || 5000;
@@ -25,6 +26,52 @@ async function run() {
     try {
         // await client.connect();
 
+        const db = client.db("prodexdb");
+        const productsCollection = db.collection("products");
+
+        app.post("/products", async (req, res) => {
+            try {
+                const product = req.body;
+                const result = await productsCollection.insertOne(product);
+                res.status(201).send(result);
+            } catch (err) {
+                res.status(500).send({
+                    error: "Failed to add product"
+                });
+            }
+        });
+
+        app.get("/products", async (req, res) => {
+            try {
+                const products = await productsCollection.find().toArray();
+                res.send(products);
+            } catch (err) {
+                res.status(500).send({
+                    error: "Failed to fetch products"
+                });
+            }
+        });
+
+        app.get("/products/:id", async (req, res) => {
+            try {
+                const id = req.params.id;
+                const product = await productsCollection.findOne({
+                    _id: new ObjectId(id)
+                });
+
+                if (!product) {
+                    return res.status(404).send({
+                        error: "Product not found"
+                    });
+                }
+
+                res.send(product);
+            } catch (err) {
+                res.status(400).send({
+                    error: "Invalid ID format"
+                });
+            }
+        });
 
         // await client.db("admin").command({
         //     ping: 1
